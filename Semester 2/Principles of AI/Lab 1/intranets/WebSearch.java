@@ -46,6 +46,8 @@ public class WebSearch
 	// A web page is a goal node if it includes 
 	// the following string.
 	static final String GOAL_PATTERN   = "QUERY1 QUERY2 QUERY3 QUERY4";
+        
+        static String directoryName, searchStrategyName;
 
 	public static void main(String args[])
 	{ 
@@ -55,8 +57,8 @@ public class WebSearch
 		}
 		else
 		{
-			String directoryName = args[0]; // Read the search strategy to use.
-			String searchStrategyName = args[1]; // Read the search strategy to use.
+			directoryName = args[0]; // Read the search strategy to use.
+			searchStrategyName = args[1]; // Read the search strategy to use.
 
 			if (searchStrategyName.equalsIgnoreCase("breadth") ||
 					searchStrategyName.equalsIgnoreCase("depth")   ||
@@ -243,7 +245,10 @@ public class WebSearch
                                                 if(SOUT)System.out.println("BREADTH CASE Followed");
                                                 OPEN.add(new SearchNode(hyperlink));
                                                 break;
-                                            case "DEPTH":          
+                                            case "DEPTH": 
+                                                if(SOUT)System.out.println("DEPTH CASE Followed");
+                                                OPEN.add(new SearchNode(hyperlink));
+                                                break;
                                         }
 				}
 			}
@@ -281,13 +286,16 @@ public class WebSearch
 	// You can use this to remove the first element from OPEN.
 	static SearchNode pop(LinkedList<SearchNode> list)
 	{
-		SearchNode result = list.removeFirst();
-                
-
-
-
+            SearchNode result = null;
+            switch(searchStrategyName.toUpperCase()){
+                case "BREADTH":
+                    result = list.removeFirst();
+                    break;
+                case "DEPTH":
+                    result = list.removeLast();
+            }
 		return result;
-	}
+        }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
