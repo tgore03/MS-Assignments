@@ -2,6 +2,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.StringTokenizer;
@@ -29,9 +30,10 @@ public class WebSearch
 {
 	static LinkedList<SearchNode> OPEN; // Feel free to choose your own data structures for searching,
 	static HashSet<String> CLOSED;      // and be sure to read documentation about them.
+        static String path = "";            // Store the path followed to reach the goal.
 
-	static final boolean DEBUGGING = true; // When set, report what's happening.
-        static final boolean SOUT = true; //Execute custom print statements
+	static final boolean DEBUGGING = false; // When set, report what's happening.
+        static final boolean SOUT = false; //Execute custom print statements
 	// WARNING: lots of info is printed.
 
 	static int beamWidth = 2; // If searchStrategy = "beam",
@@ -88,7 +90,7 @@ public class WebSearch
 		{
 			SearchNode currentNode = pop(OPEN);
 			String currentURL = currentNode.getNodeName();
-
+                        path += currentURL.toString() + ", ";   //Add currently visited node to path.
 			nodesVisited++;
 
 			// Go and fetch the contents of this file.
@@ -103,6 +105,7 @@ public class WebSearch
 				// (You might also wish to write a method that
 				// counts the solution-path's length, and then print that
 				// number here.)
+                                System.out.println("\n\nGoal Node Found");
 				currentNode.reportSolutionPath();
 				break;
 			}
@@ -120,6 +123,8 @@ public class WebSearch
 		System.out.println(" Visited " + nodesVisited + " nodes, starting @" +
 				" " + directoryName + File.separator + startNode +
 				", using: " + searchStrategy + " search.");
+                System.out.println("path followed : \n" + path);
+                
 	}
 
 	// This method reads the page's contents and
@@ -137,7 +142,7 @@ public class WebSearch
 		while (st.hasMoreTokens())
 		{
 			String token = st.nextToken();
-                           childno++;
+                           
 			// Look for the hyperlinks on the current page.
 
 			// (Lots a print statments and error checks are in here,
@@ -146,9 +151,10 @@ public class WebSearch
 
 			// At the start of some hypertext?  Otherwise, ignore this token.
 			if (token.equalsIgnoreCase("<A"))
-			{
+			{       
 				String hyperlink; // The name of the child node.
-
+                                childno++;
+                                
 				if (DEBUGGING) System.out.println("\nEncountered a HYPERLINK. Child No: " + childno);
 
 				// Read: HREF = page#.html >
@@ -231,9 +237,18 @@ public class WebSearch
 
 					// HINT: read about the insertElementAt() and addElement()
 					// methods in the Vector class.
+                                        
+                                        switch(searchStrategy.toUpperCase()){
+                                            case "BREADTH": 
+                                                if(SOUT)System.out.println("BREADTH CASE Followed");
+                                                OPEN.add(new SearchNode(hyperlink));
+                                                break;
+                                            case "DEPTH":          
+                                        }
 				}
 			}
 		}
+                if(SOUT) System.out.println("");
 	}
 
 	// A GOAL is a page that contains the goalPattern set above.
@@ -267,7 +282,7 @@ public class WebSearch
 	static SearchNode pop(LinkedList<SearchNode> list)
 	{
 		SearchNode result = list.removeFirst();
-
+                
 
 
 
@@ -293,6 +308,7 @@ class SearchNode
 	}
 
 	public void reportSolutionPath() {
+            
 	}
 
 	public String getNodeName() {
