@@ -2,9 +2,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.PriorityQueue;
 import java.util.StringTokenizer;
 
 
@@ -31,6 +31,7 @@ public class WebSearch
 	static LinkedList<SearchNode> OPEN; // Feel free to choose your own data structures for searching,
 	static HashSet<String> CLOSED;      // and be sure to read documentation about them.
         static String path = "";            // Store the path followed to reach the goal.
+        static PriorityQueue<SearchNode> CHILDLIST;
 
 	static final boolean DEBUGGING = false; // When set, report what's happening.
         static final boolean SOUT = false; //Execute custom print statements
@@ -91,6 +92,7 @@ public class WebSearch
 		while (!OPEN.isEmpty())
 		{
 			SearchNode currentNode = pop(OPEN);
+                        if(SOUT) System.out.println("\ncurrent node = " + currentNode.getNodeName());
 			String currentURL = currentNode.getNodeName();
                         path += currentURL.toString() + ", ";   //Add currently visited node to path.
 			nodesVisited++;
@@ -141,6 +143,13 @@ public class WebSearch
 		StringTokenizer st = new StringTokenizer(contents);
                 int childno = 0;
                 
+                //Priority Queue to store all children nodes and their fn values.
+                CHILDLIST = new PriorityQueue<SearchNode>();
+                
+                //Variables to calculate the fn for each link
+                int winpage=0, winlink=0, winseq=0, wpos=0, consno=0; // No. of Words in Page, No. of words in hypertext, No. of words in sequence, occurance of word, next expected sequence number
+                double fn;
+                
 		while (st.hasMoreTokens())
 		{
 			String token = st.nextToken();
@@ -152,10 +161,15 @@ public class WebSearch
 			// create your own intranets.)
 
 			// At the start of some hypertext?  Otherwise, ignore this token.
+                        if(token.toLowerCase().contains("query")){
+                            winpage++;
+                            wpos++;
+                        }
 			if (token.equalsIgnoreCase("<A"))
 			{       
 				String hyperlink; // The name of the child node.
                                 childno++;
+                                winlink=0;
                                 
 				if (DEBUGGING) System.out.println("\nEncountered a HYPERLINK. Child No: " + childno);
 
@@ -179,7 +193,7 @@ public class WebSearch
 				{
 					System.out.println("Expecting 'page#.html' and got: " + hyperlink);
 				}
-
+                                
 				token = st.nextToken();
 				if (!token.equalsIgnoreCase(">"))
 				{
@@ -211,6 +225,21 @@ public class WebSearch
 					{
 						token = st.nextToken();
 						if (!token.equalsIgnoreCase("</A>")) hypertext += " " + token;
+                                                if(token.toLowerCase().contains("query")) {
+                                                    winlink++;
+                                                    wpos++;
+                                                    int no;
+                                                    if((no=Integer.parseInt(token.substring(5))) <5){
+                                                        if(no == consno+1){
+                                                            consno++;
+                                                            winseq++;
+                                                        } else {
+                                                            if(winseq==0) winseq=1;
+                                                            consno=no;
+                                                        }
+                                                    }
+                                                        
+                                                }
 					}
 					while (!token.equalsIgnoreCase("</A>"));
 
@@ -240,6 +269,10 @@ public class WebSearch
 					// HINT: read about the insertElementAt() and addElement()
 					// methods in the Vector class.
                                         
+                                        //calculate the fn value for the link
+
+                                        
+                                        
                                         switch(searchStrategy.toUpperCase()){
                                             case "BREADTH": 
                                                 if(SOUT)System.out.println("BREADTH CASE Followed");
@@ -249,10 +282,33 @@ public class WebSearch
                                                 if(SOUT)System.out.println("DEPTH CASE Followed");
                                                 OPEN.add(new SearchNode(hyperlink));
                                                 break;
+                                            case "BEST":
+                                                if(SOUT)System.out.println("winpage: " + winpage + " winlink: " + winlink + " winseq: " + winseq + " wpos: " + wpos);
+                                                fn = ((winpage + 2*winlink)* winseq) - 0.1*(wpos-winlink+1);
+                                                if(fn<1) fn=1;
+                                                fn = 1/fn;
+                                                if(SOUT) System.out.println("fn = " + fn);
+                                                CHILDLIST.add(new SearchNode(hyperlink, fn));
+                                                
+                                                //clean the variables for next link
+                                                winlink=0;
+                                                winseq=0;
+                                                break;
                                         }
 				}
 			}
 		}
+                
+                //add the child nodes to LinkedList based on heuristic
+                if(searchStrategyName.equalsIgnoreCase("BEST")){
+                    //check the contents of queue
+                    if(SOUT) System.out.println(CHILDLIST);
+                    while(!CHILDLIST.isEmpty()){
+                        SearchNode node = CHILDLIST.remove();
+                        OPEN.add(node);
+                    }
+                }
+                
                 if(SOUT) System.out.println("");
 	}
 
@@ -293,6 +349,10 @@ public class WebSearch
                     break;
                 case "DEPTH":
                     result = list.removeLast();
+                    break;
+                case "BEST":
+                    result = list.removeLast();
+                    break;
             }
 		return result;
         }
@@ -308,13 +368,18 @@ public class WebSearch
 // the name of the file (eg, "page7.html") associated with this node, and
 // a (void) method called reportSolutionPath() that prints the path
 // from the start node to the current node represented by the SearchNode instance.
-class SearchNode
+class SearchNode implements Comparable<SearchNode>
 {
 	final String nodeName;
+        double fn = 1;
 	public SearchNode(String name) {
 		nodeName = name;
 	}
-
+        
+        public SearchNode(String name, double value){
+            nodeName = name;
+            fn = value;
+        }
 	public void reportSolutionPath() {
             
 	}
@@ -322,6 +387,20 @@ class SearchNode
 	public String getNodeName() {
 		return nodeName;
 	} 
+        
+        public double getfn(){
+            return fn;
+        }
+
+    @Override
+    public int compareTo(SearchNode o) {
+        if(this.fn < o.fn)
+            return 1;
+        else if(this.fn == o.fn)
+            return 0;
+        else 
+            return -1;
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
