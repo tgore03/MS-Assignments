@@ -2,9 +2,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 
 
@@ -38,6 +40,7 @@ public class WebSearch
 	// WARNING: lots of info is printed.
 
 	static int beamWidth = 2; // If searchStrategy = "beam",
+        static int priority;  //1 for BEST & -1 for BEAM
 	// limit the size of OPEN to this value.
 	// The setSize() method in the Vector
 	// class can be used to accomplish this.
@@ -66,6 +69,23 @@ public class WebSearch
 					searchStrategyName.equalsIgnoreCase("best")    ||
 					searchStrategyName.equalsIgnoreCase("beam"))
 			{
+                            if(searchStrategyName.equalsIgnoreCase("BEST")){
+                                priority = 1;  
+                            } else if(searchStrategyName.equalsIgnoreCase("BEAM")){
+                                priority = -1;
+                                try{
+                                    Scanner sc = new Scanner(new InputStreamReader(System.in));
+                                    System.out.println("Enter the Beam Width");
+                                    beamWidth = sc.nextInt();
+                                    if(beamWidth <1) {
+                                        System.out.println("Invalid beam width");
+                                        return;
+                                    }
+                                } catch (Exception e){
+                                    System.out.println("Invalid Beam Width");
+                                    return;
+                                }
+                            }
 				performSearch(START_NODE, directoryName, searchStrategyName);
 			}
 			else
@@ -86,6 +106,7 @@ public class WebSearch
 
 		OPEN   = new LinkedList<SearchNode>();
 		CLOSED = new HashSet<String>();
+                CHILDLIST = new PriorityQueue<SearchNode>();
 
 		OPEN.add(new SearchNode(startNode));
 
@@ -122,12 +143,20 @@ public class WebSearch
 			// Provide a status report.
 			if (DEBUGGING) System.out.println("Nodes visited = " + nodesVisited
 					+ " |OPEN| = " + OPEN.size());
+                        
+                        if(searchStrategyName.equalsIgnoreCase("BEAM") && OPEN.isEmpty()){
+                            //Trasfer the first Beam width values from priority queue to OPEN;
+                            for(int i=0; i<beamWidth && i<CHILDLIST.size(); i++){
+                                SearchNode node = CHILDLIST.remove();
+                                OPEN.add(node);
+                            }
+                        }
 		}
 
 		System.out.println(" Visited " + nodesVisited + " nodes, starting @" +
 				" " + directoryName + File.separator + startNode +
 				", using: " + searchStrategy + " search.");
-                System.out.println("path followed : \n" + path);
+                System.out.println("\npath followed : \n" + path);
                 
 	}
 
@@ -143,8 +172,10 @@ public class WebSearch
 		StringTokenizer st = new StringTokenizer(contents);
                 int childno = 0;
                 
-                //Priority Queue to store all children nodes and their fn values.
-                CHILDLIST = new PriorityQueue<SearchNode>();
+                //Priority Queue to store all children nodes and their fn values for BEST FIRST SEARCH
+                if(searchStrategyName.equalsIgnoreCase("BEST")){
+                    CHILDLIST = new PriorityQueue<SearchNode>();
+                }
                 
                 //Variables to calculate the fn for each link
                 int winpage=0, winlink=0, winseq=0, wpos=0, consno=0; // No. of Words in Page, No. of words in hypertext, No. of words in sequence, occurance of word, next expected sequence number
@@ -282,6 +313,7 @@ public class WebSearch
                                                 if(SOUT)System.out.println("DEPTH CASE Followed");
                                                 OPEN.add(new SearchNode(hyperlink));
                                                 break;
+                                            case "BEAM":
                                             case "BEST":
                                                 if(SOUT)System.out.println("winpage: " + winpage + " winlink: " + winlink + " winseq: " + winseq + " wpos: " + wpos);
                                                 fn = ((winpage + 2*winlink)* winseq) - 0.1*(wpos-winlink+1);
@@ -353,6 +385,8 @@ public class WebSearch
                 case "BEST":
                     result = list.removeLast();
                     break;
+                case "BEAM":
+                    result = list.removeFirst();
             }
 		return result;
         }
@@ -395,11 +429,11 @@ class SearchNode implements Comparable<SearchNode>
     @Override
     public int compareTo(SearchNode o) {
         if(this.fn < o.fn)
-            return 1;
+            return WebSearch.priority;
         else if(this.fn == o.fn)
             return 0;
         else 
-            return -1;
+            return -WebSearch.priority;
     }
 }
 
