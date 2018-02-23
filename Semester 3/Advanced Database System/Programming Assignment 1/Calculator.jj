@@ -1,0 +1,105 @@
+options {
+	STATIC = false ;
+}
+
+
+PARSER_BEGIN(Calculator)
+
+
+public class Calculator {
+	public static void main( String[] args ) throws ParseException, TokenMgrError, NumberFormatException {
+		Calculator parser = new Calculator( System.in ) ;
+		parser.Start() ; 
+	}
+	int 	prevValue = 0;
+}
+PARSER_END(Calculator)
+
+SKIP : {" "}
+TOKEN : { < EOL : "\n" | "\r" | "\r\n" > }
+TOKEN : { < PLUS : "+" > }
+TOKEN : { < MINUS : "-" > }
+TOKEN : { < MULTI : "*" > }
+TOKEN : { < DIV : "/" > }
+TOKEN : { < OPAR : "(" > }
+TOKEN : { < CPAR : ")" > }
+TOKEN : { < NUMBER : (["0"-"9"])+ > }
+
+
+void Start() throws NumberFormatException:
+{}
+{
+	(
+		prevValue = Expression()
+		<EOL>
+		{ System.out.println("Result = " + prevValue + "\n");}
+	)*
+	<EOF>
+}
+
+int Expression() throws NumberFormatException :
+{
+	int i;
+	int value;
+}
+{
+	value = Term()
+	(
+		<PLUS>
+		i=Term()
+		{ value += i;}
+		
+		|
+		
+		<MINUS>
+		i = Term()
+		{value -= i;}		
+	)*
+	{return value;}
+}
+
+int Term() throws NumberFormatException :
+{
+	int i;
+	int value;
+}
+{
+	value = Primary()
+	(
+		<MULTI>
+		i = Primary()
+		{value *= i;}
+		
+		|
+		
+		<DIV>
+		i = Primary()
+		{value /= i;}
+	)*
+	{return value;}
+}
+
+
+int Primary() throws NumberFormatException :
+{
+	Token t;
+	int d;
+}
+{
+	t = <NUMBER>
+	{return Integer.parseInt(t.image);}
+	
+	|
+	
+	<OPAR>
+	d = Expression() 
+	<CPAR>
+	{return d;}
+	
+	|
+	
+	<MINUS>
+	d = Primary()
+	{return -d;}
+}
+

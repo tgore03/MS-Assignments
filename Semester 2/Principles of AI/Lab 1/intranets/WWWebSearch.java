@@ -1,3 +1,4 @@
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -5,11 +6,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 import java.util.StringTokenizer;
+import javax.swing.text.Document;
+import javax.swing.text.html.HTML;
 
 
 // You should call this code as follows:
@@ -127,8 +131,15 @@ public class WWWebSearch
                         URL url;
                         try{
                             url = new URL(urlname);
+                            URLConnection uc = url.openConnection();
+                            
+                            InputStreamReader inputStreamReader = new InputStreamReader(uc.getInputStream());
+                            Document d = 
+                            
                         } catch(MalformedURLException mle){
                             if(SOUT) System.out.println("URL incorrect");
+                        } catch(IOException ie){
+                            if(SOUT) System.out.println("IO Exception");
                         }
                         
                         
@@ -496,7 +507,6 @@ class Utilities
                         
                         ///
                         BufferedReader in = new BufferedReader(new InputStreamReader(oracle.openStream()));
-
                         String inputLine;
                         while ((inputLine = in.readLine()) != null)
                         System.out.println(inputLine);
